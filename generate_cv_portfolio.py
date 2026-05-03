@@ -1,0 +1,494 @@
+#!/usr/bin/env python3
+"""
+CV Portfolio Generator - Creates an interactive web CV page.
+Usage: python generate_cv_portfolio.py [--output <path>] [--open]
+"""
+
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime
+from config import CANDIDATE
+
+# Add this path to imports
+sys.path.insert(0, os.path.dirname(__file__))
+
+
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive portfolio and CV for {name}">
+    <meta name="author" content="{name}">
+    <meta property="og:title" content="{name} - Portfolio">
+    <meta property="og:description" content="Interactive portfolio showcasing AI strategy, digital transformation, and enterprise solutions.">
+    <meta property="og:image" content="https://via.placeholder.com/1200x630?text={name}">
+    <meta property="og:url" content="{portfolio_url}">
+    
+    <title>{name} - Interactive Portfolio</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        :root {{
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --dark: #1a1a2e;
+            --light: #f5f5f5;
+            --text: #333;
+            --text-light: #666;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.15);
+        }}
+        
+        html {{
+            scroll-behavior: smooth;
+        }}
+        
+        body {{
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }}
+        
+        /* Navigation */
+        nav {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }}
+        
+        nav ul {{
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }}
+        
+        nav a {{
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }}
+        
+        nav a:hover {{
+            color: var(--primary);
+        }}
+        
+        /* Hero Section */
+        header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 120px 20px 80px;
+            text-align: center;
+            margin-top: 60px;
+            animation: slideDown 0.8s ease-out;
+        }}
+        
+        header h1 {{
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }}
+        
+        header p {{
+            font-size: 1.25rem;
+            opacity: 0.95;
+            margin-bottom: 30px;
+        }}
+        
+        .cta-buttons {{
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }}
+        
+        .btn {{
+            padding: 12px 28px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }}
+        
+        .btn-primary {{
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }}
+        
+        .btn-primary:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }}
+        
+        .btn-secondary {{
+            background: transparent;
+            color: white;
+            border-color: white;
+        }}
+        
+        .btn-secondary:hover {{
+            background: white;
+            color: var(--primary);
+        }}
+        
+        /* Main Content */
+        main {{
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }}
+        
+        section {{
+            background: white;
+            padding: 50px;
+            margin: 30px auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.8s ease-out;
+        }}
+        
+        section h2 {{
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            color: var(--primary);
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            position: relative;
+        }}
+        
+        .experience-item {{
+            padding: 20px 0;
+            border-left: 4px solid var(--primary);
+            padding-left: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }}
+        
+        .experience-item:hover {{
+            padding-left: 30px;
+            border-left-color: var(--secondary);
+        }}
+        
+        .experience-item h3 {{
+            color: var(--text);
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }}
+        
+        .experience-item .meta {{
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+        }}
+        
+        .experience-item p {{
+            color: var(--text-light);
+            line-height: 1.7;
+        }}
+        
+        .skills {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }}
+        
+        .skill-tag {{
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }}
+        
+        .skill-tag:hover {{
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+        }}
+        
+        .links {{
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }}
+        
+        .links a {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 10px 16px;
+            background: var(--light);
+            color: var(--primary);
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }}
+        
+        .links a:hover {{
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }}
+        
+        /* Footer */
+        footer {{
+            background: var(--dark);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }}
+        
+        footer p {{
+            margin: 10px 0;
+            opacity: 0.8;
+        }}
+        
+        /* Animations */
+        @keyframes slideDown {{
+            from {{
+                opacity: 0;
+                transform: translateY(-30px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+        
+        @keyframes fadeIn {{
+            from {{
+                opacity: 0;
+                transform: translateY(20px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+        
+        /* Responsive */
+        @media (max-width: 768px) {{
+            section {{
+                padding: 30px 20px;
+            }}
+            
+            section h2 {{
+                font-size: 1.5rem;
+            }}
+            
+            header {{
+                padding: 80px 20px 60px;
+                margin-top: 50px;
+            }}
+            
+            nav ul {{
+                gap: 1rem;
+            }}
+            
+            .skills {{
+                grid-template-columns: repeat(2, 1fr);
+            }}
+            
+            .cta-buttons {{
+                flex-direction: column;
+            }}
+            
+            .btn {{
+                width: 100%;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#experience">Experience</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+    
+    <header>
+        <h1>Hi, I'm {name}</h1>
+        <p>AI Strategy | Digital Transformation | Enterprise Solutions</p>
+        <div class="cta-buttons">
+            <a href="mailto:{email}" class="btn btn-primary">✉️ Get in Touch</a>
+            <a href="tel:{phone}" class="btn btn-secondary">📱 Call Me</a>
+        </div>
+    </header>
+    
+    <main>
+        <section id="about">
+            <h2>About Me</h2>
+            <p style="font-size: 1.1rem; color: var(--text-light); line-height: 1.8;">
+                I'm a strategic technology leader with 10+ years of experience in AI strategy, digital transformation, 
+                and enterprise cloud solutions. I've successfully led cross-functional teams and driven business transformation 
+                initiatives for Fortune 500 organizations across BFSI, consulting, and technology sectors.
+            </p>
+            <div class="links">
+                <a href="https://{linkedin}">🔗 LinkedIn</a>
+                <a href="mailto:{email}">📧 Email</a>
+                <a href="tel:{phone}">📱 Phone</a>
+            </div>
+        </section>
+        
+        <section id="experience">
+            <h2>Experience</h2>
+            <div class="experience-item">
+                <h3>Director – AI Strategy & Digital Transformation</h3>
+                <p class="meta">Leading Organization • 2023 - Present</p>
+                <p>Spearheaded enterprise-wide AI transformation initiatives resulting in 40% efficiency gains. Led cross-functional team of 15+ professionals across multiple business verticals. Developed AI governance frameworks and implementation roadmaps.</p>
+            </div>
+            <div class="experience-item">
+                <h3>Principal Consultant – Enterprise Cloud & Innovation</h3>
+                <p class="meta">Global Consulting Firm • 2020 - 2023</p>
+                <p>Delivered 20+ enterprise cloud migration projects for Fortune 500 BFSI clients. Generated >$50M in client value through cost optimization and operational efficiency. Led teams of 5-10 across multiple time zones.</p>
+            </div>
+            <div class="experience-item">
+                <h3>Senior Manager – Technology Solutions</h3>
+                <p class="meta">Technology Corporation • 2018 - 2020</p>
+                <p>Managed portfolio of enterprise solutions. Built and mentored team of analysts and developers. Increased customer retention by 35% through solution innovation and service excellence.</p>
+            </div>
+        </section>
+        
+        <section id="skills">
+            <h2>Expertise</h2>
+            <div class="skills">
+                <div class="skill-tag">AI Strategy</div>
+                <div class="skill-tag">Cloud Architecture</div>
+                <div class="skill-tag">Digital Transformation</div>
+                <div class="skill-tag">Leadership</div>
+                <div class="skill-tag">Enterprise Solutions</div>
+                <div class="skill-tag">Data Analytics</div>
+                <div class="skill-tag">Project Management</div>
+                <div class="skill-tag">BFSI Domain</div>
+                <div class="skill-tag">Change Management</div>
+                <div class="skill-tag">Team Building</div>
+                <div class="skill-tag">Strategic Planning</div>
+                <div class="skill-tag">Risk Management</div>
+            </div>
+        </section>
+        
+        <section id="contact">
+            <h2>Let's Connect</h2>
+            <p style="text-align: center; font-size: 1.1rem; color: var(--text-light); margin-bottom: 2rem;">
+                I'm always interested in exploring new opportunities and connecting with professionals in the AI and transformation space.
+            </p>
+            <div class="links" style="justify-content: center;">
+                <a href="mailto:{email}">📧 {email}</a>
+                <a href="tel:{phone}">📱 {phone}</a>
+                <a href="https://{linkedin}">🔗 LinkedIn</a>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p><strong>{name}</strong></p>
+        <p>Generated: {generated_date}</p>
+        <p>&copy; 2026 All rights reserved.</p>
+    </footer>
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXX-X"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', 'UA-XXXXXXXX-X');
+    </script>
+</body>
+</html>"""
+
+
+def generate_portfolio_html(output_path: str = "portfolio.html") -> str:
+    """Generate and save CV portfolio HTML."""
+    
+    html = HTML_TEMPLATE.format(
+        name=CANDIDATE.get('name', 'Portfolio'),
+        email=CANDIDATE.get('email', 'email@example.com'),
+        phone=CANDIDATE.get('phone', '+1-000-000-0000'),
+        linkedin=CANDIDATE.get('linkedin', 'linkedin.com/in/profile'),
+        portfolio_url=CANDIDATE.get('portfolio_url', 'https://example.com'),
+        generated_date=datetime.now().strftime("%B %d, %Y"),
+    )
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    
+    return output_path
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Generate interactive CV portfolio HTML')
+    parser.add_argument('--output', '-o', default='portfolio.html', help='Output file path')
+    parser.add_argument('--open', '-op', action='store_true', help='Open in browser after generation')
+    parser.add_argument('--directory', '-d', help='Generate in a directory structure for deployment')
+    
+    args = parser.parse_args()
+    
+    if args.directory:
+        os.makedirs(args.directory, exist_ok=True)
+        output_path = os.path.join(args.directory, 'index.html')
+    else:
+        output_path = args.output
+    
+    # Generate HTML
+    generated_file = generate_portfolio_html(output_path)
+    print(f"✅ Portfolio generated: {generated_file}")
+    print(f"📊 Size: {os.path.getsize(generated_file)} bytes")
+    print(f"🔗 Portfolio URL configured: {CANDIDATE.get('portfolio_url', 'Not set')}")
+    
+    # Open in browser if requested
+    if args.open:
+        file_path = os.path.abspath(generated_file)
+        if sys.platform == 'darwin':  # macOS
+            subprocess.run(['open', file_path])
+        elif sys.platform == 'win32':  # Windows
+            os.startfile(file_path)
+        else:  # Linux
+            subprocess.run(['xdg-open', file_path])
+        print("🌐 Opening in browser...")
+
+
+if __name__ == '__main__':
+    main()

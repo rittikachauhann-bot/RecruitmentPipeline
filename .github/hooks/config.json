@@ -1,0 +1,46 @@
+{
+  "name": "Configuration - Hook Settings",
+  "description": "Central configuration for all guardrail hooks",
+  "globalSettings": {
+    "enabled": true,
+    "enforcementLevel": "STRICT",
+    "logLevel": "DEBUG",
+    "retentionDays": 30,
+    "alertChannels": ["console", "log_file"]
+  },
+  "trustedOperators": [],
+  "exceptions": [
+    {
+      "id": "example-exception",
+      "description": "Allows specific operation with documented reason",
+      "condition": "disabled for now",
+      "exceptionToken": "generate with --create-exception",
+      "expiresAt": "2026-06-01T00:00:00Z",
+      "approvedBy": "admin"
+    }
+  ],
+  "backupConfig": {
+    "enabled": true,
+    "backupDirectory": ".github/backups",
+    "filesBackedUp": [
+      "credentials.json",
+      "token.json",
+      "pipeline.json",
+      "config.py"
+    ],
+    "backupStrategy": "create before any modification"
+  },
+  "auditConfig": {
+    "enabled": true,
+    "logDirectory": ".github/logs",
+    "maxLogSize": "100MB",
+    "compressionEnabled": true,
+    "encryptionEnabled": false
+  },
+  "notificationConfig": {
+    "enabled": true,
+    "criticalAlertsTo": [],
+    "summaryFrequency": "daily",
+    "summaryTime": "09:00 UTC"
+  }
+}

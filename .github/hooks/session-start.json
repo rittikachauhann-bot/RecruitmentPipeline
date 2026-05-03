@@ -1,0 +1,44 @@
+{
+  "name": "SessionStart - Inject Safety Context",
+  "type": "SessionStart",
+  "description": "Injects important safety context and checks at the beginning of each session",
+  "enabled": true,
+  "actions": [
+    {
+      "id": "safety-briefing",
+      "type": "CONTEXT_INJECTION",
+      "content": "🛡️ SAFETY GUARDRAILS ACTIVE\n\nThis session has comprehensive guardrails enabled:\n• File deletion operations are gated\n• Database modifications require confirmation\n• API calls are rate-limited and validated\n• Credential files are protected\n• Dangerous terminal commands are blocked\n\nIf you need to bypass a guardrail, explicitly request an exception.",
+      "priority": "HIGH"
+    },
+    {
+      "id": "environment-check",
+      "type": "VALIDATION",
+      "checks": [
+        {
+          "name": "credentials_exists",
+          "command": "test -f credentials.json",
+          "failMessage": "⚠️ Warning: credentials.json not found. Gmail sender will fail.",
+          "severity": "MEDIUM"
+        },
+        {
+          "name": "token_exists",
+          "command": "test -f token.json",
+          "failMessage": "⚠️ Warning: token.json not found. Gmail authentication may fail.",
+          "severity": "MEDIUM"
+        },
+        {
+          "name": "db_accessible",
+          "command": "python3 -c 'import pipeline_db; print(\"DB OK\")'",
+          "failMessage": "❌ Database connection failed. Check pipeline_db.py configuration.",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "policy-reminder",
+      "type": "CONTEXT_INJECTION",
+      "content": "📋 OPERATIONAL POLICY REMINDERS\n\n1. Always backup before modifying pipeline.json\n2. Test email templates in draft before sending bulk emails\n3. Review recipient lists before sending campaigns\n4. Never commit credentials to version control\n5. Run tests after dependency updates",
+      "priority": "MEDIUM"
+    }
+  ]
+}

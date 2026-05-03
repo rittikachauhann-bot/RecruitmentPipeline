@@ -1,0 +1,66 @@
+{
+  "name": "ResourceLimits - Prevent Resource Exhaustion",
+  "type": "PreToolUse",
+  "description": "Enforces resource limits to prevent system overload and runaway processes",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "limit-concurrent-processes",
+      "action": "THROTTLE",
+      "condition": "tool == 'run_in_terminal'",
+      "limits": {
+        "maxConcurrentProcesses": 5,
+        "maxWaitTime": "5m",
+        "errorMessage": "Too many concurrent processes. Please wait before starting new ones."
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "limit-file-size",
+      "action": "WARN",
+      "condition": "tool == 'create_file'",
+      "limits": {
+        "maxFileSizeBytes": 52428800,
+        "warningMessage": "File size exceeds 50MB. Consider splitting into smaller files.",
+        "blockAbove": 104857600
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "limit-memory-usage",
+      "action": "MONITOR",
+      "condition": "tool == 'run_in_terminal' && (command.includes('python') || command.includes('node'))",
+      "limits": {
+        "maxMemoryUsage": "2GB",
+        "warnAt": "1.5GB",
+        "errorMessage": "Memory usage exceeds safe limits"
+      },
+      "severity": "HIGH"
+    },
+    {
+      "id": "limit-api-response-size",
+      "action": "VALIDATE",
+      "condition": "tool == 'fetch_webpage' || tool == 'github_repo'",
+      "limits": {
+        "maxResponseBytes": 10485760,
+        "timeoutSeconds": 30,
+        "errorMessage": "Response too large or request timed out"
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "limit-loop-iterations",
+      "action": "BLOCK",
+      "condition": "code includes loop && iterations > 100000",
+      "message": "❌ Blocked: Loop exceeds 100,000 iterations. Risk of infinite loop.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "limit-recursion-depth",
+      "action": "WARN",
+      "condition": "code includes recursion && depth > 1000",
+      "message": "⚠️ Deep recursion detected. Risk of stack overflow.",
+      "severity": "MEDIUM"
+    }
+  ]
+}

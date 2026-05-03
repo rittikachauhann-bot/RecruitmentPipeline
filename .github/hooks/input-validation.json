@@ -1,0 +1,64 @@
+{
+  "name": "InputValidation - Sanitize User Input",
+  "type": "PreToolUse",
+  "description": "Validates and sanitizes input to prevent injection attacks and data corruption",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "sanitize-email-addresses",
+      "action": "VALIDATE",
+      "condition": "tool matches 'gmail_sender' && param == 'recipient'",
+      "validation": {
+        "type": "regex",
+        "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        "errorMessage": "Invalid email address format"
+      },
+      "severity": "HIGH"
+    },
+    {
+      "id": "prevent-sql-injection",
+      "action": "VALIDATE",
+      "condition": "tool == 'run_in_terminal' && command.includes('sql')",
+      "validation": {
+        "type": "blocked_patterns",
+        "patterns": ["'; DROP", "' OR '1'='1", "UNION SELECT", "--", "/*", "*/"],
+        "errorMessage": "Potential SQL injection detected"
+      },
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "validate-json-syntax",
+      "action": "VALIDATE",
+      "condition": "fileEdited == 'pipeline.json'",
+      "validation": {
+        "type": "json",
+        "allowEmptyValues": false
+      },
+      "errorMessage": "Invalid JSON syntax in pipeline.json",
+      "severity": "HIGH"
+    },
+    {
+      "id": "validate-phone-numbers",
+      "action": "VALIDATE",
+      "condition": "tool matches 'claude_agents' && field == 'phone'",
+      "validation": {
+        "type": "regex",
+        "pattern": "^[+]?[0-9\\s\\-()]{10,}$",
+        "errorMessage": "Invalid phone number format"
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "validate-urls",
+      "action": "VALIDATE",
+      "condition": "tool == 'fetch_webpage' || tool == 'open_browser_page'",
+      "validation": {
+        "type": "regex",
+        "pattern": "^https?://",
+        "blockedDomains": ["localhost:*", "127.0.0.1:*", "file://"],
+        "errorMessage": "Invalid or potentially unsafe URL"
+      },
+      "severity": "MEDIUM"
+    }
+  ]
+}

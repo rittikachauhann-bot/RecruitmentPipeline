@@ -1,0 +1,14 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environment and credentials
+credentials.json
+token.json
+*.env
+
+# Editor files
+.vscode/
+.DS_Store

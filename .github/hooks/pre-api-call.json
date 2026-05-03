@@ -1,0 +1,47 @@
+{
+  "name": "PreAPICall - Validate External Operations",
+  "type": "PreToolUse",
+  "description": "Validates API calls and external operations, ensuring safe data handling and rate limiting",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "validate-gmail-send",
+      "action": "WARN",
+      "condition": "tool matches 'gmail_sender|send_email' && method == 'send'",
+      "message": "⚠️ Bulk email operation detected. Verify recipient list and content before sending.",
+      "requiresConfirmation": true,
+      "severity": "HIGH",
+      "checks": [
+        "recipientCount < 100",
+        "templateName != null",
+        "draftReviewed == true"
+      ]
+    },
+    {
+      "id": "rate-limit-api-calls",
+      "action": "THROTTLE",
+      "condition": "tool == 'run_in_terminal' && (command.includes('curl') || command.includes('requests'))",
+      "message": "ℹ️ API calls are rate-limited to 10 requests per minute.",
+      "rateLimit": {
+        "requestsPerMinute": 10,
+        "burstSize": 3
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "validate-data-export",
+      "action": "WARN",
+      "condition": "tool == 'run_in_terminal' && (command.includes('export') || command.includes('dump') || command.includes('backup'))",
+      "message": "⚠️ Data export detected. Ensure sensitive candidate information is not exposed.",
+      "requiresConfirmation": true,
+      "severity": "HIGH"
+    },
+    {
+      "id": "block-unauthorized-api-endpoints",
+      "action": "BLOCK",
+      "condition": "url.hostname not in ['gmail.googleapis.com', 'www.googleapis.com', 'localhost', 'api.example.com']",
+      "message": "❌ Blocked: Unauthorized API endpoint detected. Only approved endpoints are allowed.",
+      "severity": "CRITICAL"
+    }
+  ]
+}

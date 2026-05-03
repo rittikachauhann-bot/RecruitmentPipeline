@@ -1,0 +1,58 @@
+{
+  "name": "ErrorHandling - Graceful Failure Management",
+  "type": "PostToolUse",
+  "description": "Ensures errors are handled gracefully and don't cascade into system failures",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "catch-unhandled-errors",
+      "action": "INTERCEPT",
+      "condition": "exitCode != 0 && errorType == 'unhandled'",
+      "behavior": {
+        "action": "LOG_AND_ROLLBACK",
+        "rollbackScript": ".github/hooks/rollback.sh",
+        "notifyUser": true,
+        "message": "Operation failed. Changes have been rolled back."
+      },
+      "severity": "HIGH"
+    },
+    {
+      "id": "handle-database-errors",
+      "action": "INTERCEPT",
+      "condition": "tool == 'run_in_terminal' && errorMessage.includes('database')",
+      "behavior": {
+        "action": "RETRY",
+        "maxRetries": 3,
+        "backoffMultiplier": 2,
+        "onFinalFailure": "ALERT_USER"
+      },
+      "severity": "HIGH"
+    },
+    {
+      "id": "handle-network-errors",
+      "action": "INTERCEPT",
+      "condition": "errorType in ['network', 'timeout', 'connection_refused']",
+      "behavior": {
+        "action": "RETRY_WITH_EXPONENTIAL_BACKOFF",
+        "maxRetries": 5,
+        "initialWaitMs": 1000,
+        "message": "Network error detected. Retrying operation..."
+      },
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "handle-permission-errors",
+      "action": "WARN",
+      "condition": "errorMessage.includes('Permission denied')",
+      "message": "⚠️ Permission denied. Check file/directory permissions.",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "cleanup-on-failure",
+      "action": "CLEANUP",
+      "condition": "operation.status == 'FAILED'",
+      "cleanupScript": ".github/hooks/cleanup.sh",
+      "severity": "MEDIUM"
+    }
+  ]
+}

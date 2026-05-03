@@ -1,0 +1,47 @@
+{
+  "name": "PreFileEdit - Protect Critical Files",
+  "type": "PreFileEdit",
+  "description": "Protects critical configuration and data files from unintended modifications",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "protect-credentials",
+      "action": "WARN",
+      "filePattern": ["**/credentials.json", "**/.env*", "**/config/*.json", "token.json"],
+      "message": "⚠️ You are editing a credentials or secrets file. Ensure no sensitive data is exposed.",
+      "requiresConfirmation": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "protect-pipeline-config",
+      "action": "WARN",
+      "filePattern": ["pipeline.json", "pipeline_db.py", "config.py"],
+      "message": "⚠️ You are editing core pipeline configuration. Verify changes don't break the pipeline.",
+      "requiresConfirmation": true,
+      "severity": "HIGH"
+    },
+    {
+      "id": "warn-package-changes",
+      "action": "WARN",
+      "filePattern": ["requirements.txt", "package.json", "*.lock"],
+      "message": "⚠️ Dependency changes detected. Run tests after updating requirements.",
+      "requiresConfirmation": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "protect-database-files",
+      "action": "WARN",
+      "filePattern": ["*.db", "*.sql"],
+      "message": "⚠️ Database file edit detected. Ensure no data corruption occurs.",
+      "requiresConfirmation": true,
+      "severity": "HIGH"
+    },
+    {
+      "id": "block-setup-modifications",
+      "action": "BLOCK",
+      "filePattern": ["SETUP.md"],
+      "message": "❌ Setup documentation is protected. Create a new file if you need to document changes.",
+      "severity": "MEDIUM"
+    }
+  ]
+}

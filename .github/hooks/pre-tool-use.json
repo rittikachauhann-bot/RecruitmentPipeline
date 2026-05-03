@@ -1,0 +1,53 @@
+{
+  "name": "PreToolUse - Block Dangerous Operations",
+  "type": "PreToolUse",
+  "description": "Gates and blocks dangerous tool usage to prevent accidental system damage",
+  "enabled": true,
+  "rules": [
+    {
+      "id": "block-terminal-rm",
+      "action": "BLOCK",
+      "condition": "tool == 'run_in_terminal' && (command.includes('rm -rf') || command.includes('rm -f /'))",
+      "message": "❌ Blocked: Recursive file deletion disabled. Use safe deletion commands only.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "warn-database-drop",
+      "action": "WARN",
+      "condition": "tool == 'run_in_terminal' && (command.includes('DROP TABLE') || command.includes('DROP DATABASE'))",
+      "message": "⚠️ Warning: You are about to drop database tables. Confirm this operation is intentional.",
+      "requiresConfirmation": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "warn-credentials-exposure",
+      "action": "BLOCK",
+      "condition": "tool == 'run_in_terminal' && (command.includes('credentials') || command.includes('password') || command.includes('token')) && command.includes('|')",
+      "message": "❌ Blocked: Do not pipe credentials or tokens to other commands. This exposes sensitive data.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "gate-production-deploy",
+      "action": "WARN",
+      "condition": "tool == 'run_in_terminal' && (command.includes('deploy') || command.includes('kubectl apply') || command.includes('terraform apply -auto-approve'))",
+      "message": "⚠️ Production deployment detected. Confirm you have reviewed all changes.",
+      "requiresConfirmation": true,
+      "severity": "HIGH"
+    },
+    {
+      "id": "warn-largefile-operations",
+      "action": "WARN",
+      "condition": "tool == 'run_in_terminal' && (command.includes('cp') || command.includes('mv')) && command.includes('*')",
+      "message": "⚠️ Bulk file operation detected. Confirm source and destination paths.",
+      "requiresConfirmation": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "block-network-exposure",
+      "action": "BLOCK",
+      "condition": "tool == 'run_in_terminal' && (command.includes('chmod 777') || command.includes('chmod 666'))",
+      "message": "❌ Blocked: World-readable/writable permissions are a security risk.",
+      "severity": "HIGH"
+    }
+  ]
+}
