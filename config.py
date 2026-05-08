@@ -8,7 +8,7 @@ CANDIDATE = {
     "email": "riti.iiit@gmail.com",
     "phone": "+91-7042656887",
     "linkedin": "https://linkedin.com/in/ritikachouhan",
-    "portfolio_url": "https://ritika-cv.vercel.app",  # Web-based CV/portfolio link
+    "portfolio_url": "https://rittikachauhann-bot.github.io/RecruitmentPipeline/portfolio.html",  # Web-based CV/portfolio link
     "notice_period": "60 days",
     "cv_path": os.path.expanduser("~/Downloads/Ritika_Chouhan_CV_Global_1.docx"),
 }
