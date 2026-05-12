@@ -10,6 +10,9 @@ Usage:
   python pipeline_cli.py report          # Weekly pipeline report
   python pipeline_cli.py add             # Add a new job to pipeline
   python pipeline_cli.py update <ref_id> <stage>  # Update job stage
+  python pipeline_cli.py search          # Search Naukri + LinkedIn for new jobs
+  python pipeline_cli.py search naukri   # Search Naukri only
+  python pipeline_cli.py search linkedin # Search LinkedIn only
 """
 
 import sys
@@ -326,6 +329,66 @@ def cmd_update(ref_id: str, stage: str):
     print(f"  ✓ {ref_id} → {stage}")
 
 
+def cmd_search(source_filter: str = "both"):
+    _check_api_key()
+    from job_searcher import search_and_score
+    from config import AUTO_APPLY_THRESHOLD
+
+    sources = []
+    if source_filter in ("both", "naukri"):
+        sources.append("naukri")
+    if source_filter in ("both", "linkedin"):
+        sources.append("linkedin")
+
+    print(f"\n  Searching {', '.join(s.capitalize() for s in sources)} for matching jobs…")
+    print("  (Note: sites may block automated requests — results may be partial)\n")
+
+    pipeline = db.load()
+    new_jobs = search_and_score(
+        existing_pipeline=pipeline,
+        score_fn=agents.score_job,
+        min_score=70,
+        sources=sources,
+    )
+
+    if not new_jobs:
+        print("\n  No new matching jobs found above 70% score.")
+        print("  Possible reasons: bot-blocking, no new listings, or all already in pipeline.")
+        return
+
+    new_jobs.sort(key=lambda j: j["match_score"], reverse=True)
+    print(f"\n  Found {len(new_jobs)} new job(s) above 70% match:\n")
+    print(f"  {'#':<4} {'Score':<7} {'Company':<25} {'Role':<35} {'Source'}")
+    print(f"  {'-'*4} {'-'*7} {'-'*25} {'-'*35} {'-'*8}")
+    for i, j in enumerate(new_jobs, 1):
+        print(
+            f"  {i:<4} {j['match_score']:>4}%   {j['company'][:25]:<25} "
+            f"{j['role'][:35]:<35} {j['source']}"
+        )
+
+    print()
+    add_all = input(f"  Add all {len(new_jobs)} jobs to pipeline as 'Discovered'? [Y/n]: ").strip().lower()
+    if add_all == "n":
+        for i, j in enumerate(new_jobs, 1):
+            ans = input(f"  Add #{i} {j['company']} — {j['role']}? [Y/n]: ").strip().lower()
+            if ans != "n":
+                db.upsert(j)
+                print(f"    ✓ Added {j['id']}")
+                if j.get("source_url"):
+                    print(f"    URL: {j['source_url']}")
+    else:
+        for j in new_jobs:
+            db.upsert(j)
+            print(f"  ✓ {j['id']} — {j['company']}: {j['role']}")
+            if j.get("source_url"):
+                print(f"     URL: {j['source_url']}")
+
+    auto_apply = [j for j in new_jobs if j["match_score"] >= AUTO_APPLY_THRESHOLD]
+    if auto_apply:
+        print(f"\n  {len(auto_apply)} job(s) score ≥ {AUTO_APPLY_THRESHOLD}% (auto-apply threshold).")
+        print("  Run: python pipeline_cli.py apply <ref_id>  to send outreach emails.")
+
+
 def main():
     args = sys.argv[1:]
     if not args or args[0] in ("help", "--help", "-h"):
@@ -358,6 +421,12 @@ def main():
             print("Usage: python pipeline_cli.py update <ref_id> <stage>")
             sys.exit(1)
         cmd_update(args[1], args[2])
+    elif cmd == "search":
+        source = args[1].lower() if len(args) > 1 else "both"
+        if source not in ("naukri", "linkedin", "both"):
+            print("Usage: python pipeline_cli.py search [naukri|linkedin|both]")
+            sys.exit(1)
+        cmd_search(source)
     else:
         print(f"Unknown command: {cmd}")
         print(__doc__)
