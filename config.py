@@ -22,6 +22,11 @@ GMAIL_CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), "credentials.js
 GMAIL_TOKEN_FILE = os.path.join(os.path.dirname(__file__), "token.json")
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
+# --- Apify ---
+APIFY_API_TOKEN = os.environ.get("APIFY_API_TOKEN", "")
+APIFY_LINKEDIN_ACTOR = "bebity/linkedin-jobs-scraper"
+APIFY_NAUKRI_ACTOR = "epctex/naukri-scraper"
+
 # --- Pipeline DB ---
 PIPELINE_DB = os.path.join(os.path.dirname(__file__), "pipeline.json")
 

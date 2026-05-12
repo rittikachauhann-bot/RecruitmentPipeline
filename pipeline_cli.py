@@ -331,8 +331,14 @@ def cmd_update(ref_id: str, stage: str):
 
 def cmd_search(source_filter: str = "both"):
     _check_api_key()
-    from job_searcher import search_and_score
-    from config import AUTO_APPLY_THRESHOLD
+    from config import AUTO_APPLY_THRESHOLD, APIFY_API_TOKEN
+
+    if APIFY_API_TOKEN:
+        from apify_connector import search_and_score
+        backend = "Apify (reliable, ~$0.02/job)"
+    else:
+        from job_searcher import search_and_score
+        backend = "direct scraper (likely blocked — set APIFY_API_TOKEN for reliable results)"
 
     sources = []
     if source_filter in ("both", "naukri"):
@@ -340,8 +346,7 @@ def cmd_search(source_filter: str = "both"):
     if source_filter in ("both", "linkedin"):
         sources.append("linkedin")
 
-    print(f"\n  Searching {', '.join(s.capitalize() for s in sources)} for matching jobs…")
-    print("  (Note: sites may block automated requests — results may be partial)\n")
+    print(f"\n  Searching {', '.join(s.capitalize() for s in sources)} via {backend}…\n")
 
     pipeline = db.load()
     new_jobs = search_and_score(
