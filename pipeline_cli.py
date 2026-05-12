@@ -331,22 +331,23 @@ def cmd_update(ref_id: str, stage: str):
 
 def cmd_search(source_filter: str = "both"):
     _check_api_key()
-    from config import AUTO_APPLY_THRESHOLD, APIFY_API_TOKEN
+    from config import AUTO_APPLY_THRESHOLD, ADZUNA_APP_ID
 
-    if APIFY_API_TOKEN:
-        from apify_connector import search_and_score
-        backend = "Apify (reliable, ~$0.02/job)"
+    if ADZUNA_APP_ID:
+        from adzuna_connector import search_and_score
+        backend = "Adzuna (free API)"
     else:
         from job_searcher import search_and_score
-        backend = "direct scraper (likely blocked — set APIFY_API_TOKEN for reliable results)"
+        backend = "direct scraper (likely blocked — set ADZUNA_APP_ID for reliable results)"
 
-    sources = []
-    if source_filter in ("both", "naukri"):
-        sources.append("naukri")
-    if source_filter in ("both", "linkedin"):
-        sources.append("linkedin")
+    sources = ["adzuna"] if ADZUNA_APP_ID else []
+    if not ADZUNA_APP_ID:
+        if source_filter in ("both", "naukri"):
+            sources.append("naukri")
+        if source_filter in ("both", "linkedin"):
+            sources.append("linkedin")
 
-    print(f"\n  Searching {', '.join(s.capitalize() for s in sources)} via {backend}…\n")
+    print(f"\n  Searching via {backend}…\n")
 
     pipeline = db.load()
     new_jobs = search_and_score(
